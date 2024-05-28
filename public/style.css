@@ -1,0 +1,199 @@
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+    flex-direction: column;
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#login-screen {
+    display: flex;
+}
+
+h1 {
+    margin-bottom: 20px;
+    color: #444;
+    font-size: 36px;
+    font-weight: bold;
+    text-shadow: 2px 2px #aaa;
+}
+
+#controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#grid-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 20px;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(10, 50px);
+    grid-template-rows: repeat(10, 50px);
+    gap: 2px;
+}
+
+#grid div {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background-color: white;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+#grid div:hover {
+    transform: scale(1.1);
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin: 0 10px;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#stats {
+    font-size: 18px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    color: #444;
+    font-weight: bold;
+}
+
+/* Player colors */
+.player-0 {
+    background-color: rgba(255, 99, 71, 0.8); /* Tomato */
+}
+
+.player-1 {
+    background-color: rgba(30, 144, 255, 0.8); /* DodgerBlue */
+}
+
+.player-2 {
+    background-color: rgba(144, 238, 144, 0.8); /* LightGreen */
+}
+
+.player-3 {
+    background-color: rgba(255, 215, 0, 0.8); /* Gold */
+}
+
+/* Popup styling */
+.popup {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.popup-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    position: relative;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Additional styles for positioning buttons */
+.left {
+    margin-left: 20px;
+}
+
+.right {
+    margin-right: 20px;
+}
+
+/* Styles for player stats and current player text */
+#logged-in-player,
+#player1-stats,
+#player2-stats,
+#player3-stats,
+#player4-stats,
+#current-player {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 18px;
+}
+
+#logged-in-player span,
+#player1-stats,
+#player2-stats,
+#player3-stats,
+#player4-stats,
+#current-player {
+    font-weight: bold;
+    color: #333;
+}
+
+#current-player {
+    font-size: 24px;
+    color: #007bff;
+    text-shadow: 1px 1px #aaa;
+}
+
+/* Countdown display styles */
+#countdown {
+    font-size: 36px;
+    color: #007bff;
+    text-shadow: 2px 2px #aaa;
+    margin-top: 20px;
+}
