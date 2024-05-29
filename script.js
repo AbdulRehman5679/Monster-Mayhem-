@@ -7,6 +7,7 @@ const players = ["Player 1", "Player 2"];
 const playerColors = ["rgba(255, 99, 71, 0.8)", "rgba(30, 144, 255, 0.8)"];
 const playerMonsters = [10, 10]; // Initial lives set to 10
 const monsters = ["V", "W", "G"]; // V for Vampire, W for Werewolf, G for Ghost
+let selectedMonsterIndex = null;
 
 // Create the game grid
 function createGrid() {
@@ -14,41 +15,96 @@ function createGrid() {
     for (let i = 0; i < 100; i++) {
         const cell = document.createElement("div");
         cell.id = `cell-${i}`;
-        cell.addEventListener("click", () => placeMonster(i));
+        cell.addEventListener("click", () => handleCellClick(i));
         gridElement.appendChild(cell);
         grid.push({ monster: "", player: null });
     }
 }
 
-// Place a monster on the grid
-function placeMonster(index) {
-    if (grid[index].monster === "") {
-        let monster = prompt("Enter V for Vampire, W for Werewolf, G for Ghost:").toUpperCase();
-        if (monsters.includes(monster)) {
-            grid[index] = { monster: monster, player: currentPlayer };
-            document.getElementById(`cell-${index}`).textContent = monster;
-            document.getElementById(`cell-${index}`).style.backgroundColor = playerColors[currentPlayer];
-            switchPlayer();
+// Handle cell click event
+function handleCellClick(index) {
+    if (selectedMonsterIndex === null) {
+        if (grid[index].player === currentPlayer) {
+            selectedMonsterIndex = index;
+            highlightPossibleMoves(index);
         } else {
-            alert("Invalid monster type! Please enter V, W, or G.");
+            alert("Select a valid monster to move.");
         }
     } else {
-        alert("Cell is already occupied!");
+        if (selectedMonsterIndex !== index) {
+            moveMonster(selectedMonsterIndex, index);
+        }
+        clearHighlights();
+        selectedMonsterIndex = null;
     }
+}
+
+// Highlight possible moves for the selected monster
+function highlightPossibleMoves(index) {
+    clearHighlights();
+    const possibleMoves = getPossibleMoves(index);
+    possibleMoves.forEach(moveIndex => {
+        document.getElementById(`cell-${moveIndex}`).classList.add("highlight");
+    });
+}
+
+// Get possible moves for a monster
+function getPossibleMoves(index) {
+    const fromRow = Math.floor(index / 10);
+    const fromCol = index % 10;
+    const possibleMoves = [];
+
+    for (let row = 0; row < 10; row++) {
+        for (let col = 0; col < 10; col++) {
+            const moveIndex = row * 10 + col;
+            const rowDiff = Math.abs(row - fromRow);
+            const colDiff = Math.abs(col - fromCol);
+
+            if ((rowDiff === 0 || colDiff === 0 || (rowDiff <= 2 && colDiff <= 2)) && grid[moveIndex].player !== currentPlayer) {
+                possibleMoves.push(moveIndex);
+            }
+        }
+    }
+    return possibleMoves;
+}
+
+// Clear highlighted possible moves
+function clearHighlights() {
+    const highlightedCells = document.querySelectorAll(".highlight");
+    highlightedCells.forEach(cell => cell.classList.remove("highlight"));
 }
 
 // Move a monster on the grid
 function moveMonster(fromIndex, toIndex) {
-    if (grid[toIndex].monster === "" || resolveConflict(fromIndex, toIndex)) {
-        grid[toIndex] = { ...grid[fromIndex] };
-        document.getElementById(`cell-${toIndex}`).textContent = grid[toIndex].monster;
-        document.getElementById(`cell-${toIndex}`).style.backgroundColor = playerColors[grid[toIndex].player];
-        document.getElementById(`cell-${fromIndex}`).textContent = "";
-        document.getElementById(`cell-${fromIndex}`).style.backgroundColor = "white";
-        grid[fromIndex] = { monster: "", player: null };
+    if (isValidMove(fromIndex, toIndex)) {
+        if (grid[toIndex].monster === "" || resolveConflict(fromIndex, toIndex)) {
+            grid[toIndex] = { ...grid[fromIndex] };
+            document.getElementById(`cell-${toIndex}`).textContent = grid[toIndex].monster;
+            document.getElementById(`cell-${toIndex}`).style.backgroundColor = playerColors[grid[toIndex].player];
+            document.getElementById(`cell-${fromIndex}`).textContent = "";
+            document.getElementById(`cell-${fromIndex}`).style.backgroundColor = "white";
+            grid[fromIndex] = { monster: "", player: null };
+            switchPlayer();
+        } else {
+            alert("Invalid move!");
+        }
     } else {
         alert("Invalid move!");
     }
+}
+
+// Check if the move is valid
+function isValidMove(fromIndex, toIndex) {
+    const fromRow = Math.floor(fromIndex / 10);
+    const fromCol = fromIndex % 10;
+    const toRow = Math.floor(toIndex / 10);
+    const toCol = toIndex % 10;
+
+    const rowDiff = Math.abs(toRow - fromRow);
+    const colDiff = Math.abs(toCol - fromCol);
+
+    // Valid if moving horizontally, vertically, or up to 2 squares diagonally
+    return (rowDiff === 0 || colDiff === 0 || (rowDiff <= 2 && colDiff <= 2));
 }
 
 // Resolve conflict between monsters
