@@ -7,28 +7,38 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="game">
+    <div id="login-screen" class="screen">
+        <h1>Monster Mayhem</h1>
+        <input type="text" id="username" placeholder="Enter your username">
+        <button id="login-button">Login</button>
+    </div>
+    <div id="game-screen" class="screen">
         <h1>Monster Mayhem</h1>
         <div id="controls">
-            <button id="show-rules">Show Rules</button>
-            <button id="show-tutorial">Tutorial</button>
-            <div id="grid-container">
-                <div id="grid"></div>
-            </div>
-            <button id="start-game">Start Game</button>
+            <button id="show-rules" class="left">Show Rules</button>
+        </div>
+        <div id="grid-container" style="display: none;">
+            <div id="grid"></div>
         </div>
         <div id="stats">
-            <div id="player1-stats">Player 1 Lives: 10</div>
-            <div id="player2-stats">Player 2 Lives: 10</div>
+            <div id="logged-in-player">Logged in as: <span id="player-name"></span></div>
+            <div id="game-stats">Total Games Played: 0</div>
+            <div id="player-stats">
+                <div id="player1-stats">Player 1: 0 Wins / 0 Losses</div>
+                <div id="player2-stats">Player 2: 0 Wins / 0 Losses</div>
+                <div id="player3-stats">Player 3: 0 Wins / 0 Losses</div>
+                <div id="player4-stats">Player 4: 0 Wins / 0 Losses</div>
+            </div>
             <div id="current-player">Current Player: Player 1</div>
         </div>
+        <div id="countdown" style="display: none;">Starting in 3 seconds...</div>
     </div>
     <div id="rules-popup" class="popup">
         <div class="popup-content">
             <span class="close">&times;</span>
             <h2>Game Rules</h2>
-            <p>1. Each player takes turns placing a monster (V for Vampire, W for Werewolf, G for Ghost).</p>
-            <p>2. A player can place a monster on any unoccupied cell on their side of the grid.</p>
+            <p>1. Each player takes turns moving a monster (V for Vampire, W for Werewolf, G for Ghost).</p>
+            <p>2. A player can move a monster to any unoccupied cell on the grid according to the rules.</p>
             <p>3. Monsters can move any number of squares horizontally or vertically, or up to two squares diagonally.</p>
             <p>4. Conflicts between monsters are resolved as follows:</p>
             <ul>
@@ -37,32 +47,11 @@
                 <li>If a Ghost (G) and a Vampire (V) meet, the Vampire is removed.</li>
                 <li>If two monsters of the same type meet, both are removed.</li>
             </ul>
-            <p>5. A player is eliminated once 10 of their monsters are removed.</p>
+            <p>5. A player is eliminated once all their monsters are removed.</p>
             <p>6. The game ends when all other players are eliminated.</p>
         </div>
     </div>
-    <div id="tutorial-popup" class="popup">
-        <div class="popup-content">
-            <span class="close">&times;</span>
-            <h2>Game Tutorial</h2>
-            <p>Welcome to Monster Mayhem! Here's how to play:</p>
-            <ul>
-                <li>Start the game by clicking the "Start Game" button.</li>
-                <li>Each player takes turns to place a monster (V for Vampire, W for Werewolf, G for Ghost) on the grid.</li>
-                <li>Click on any empty cell and enter the monster type when prompted.</li>
-                <li>Monsters can move to any unoccupied cell horizontally, vertically, or up to two squares diagonally.</li>
-                <li>When two monsters meet, conflicts are resolved based on the following rules:</li>
-                <ul>
-                    <li>If a Vampire (V) and a Werewolf (W) meet, the Werewolf is removed.</li>
-                    <li>If a Werewolf (W) and a Ghost (G) meet, the Ghost is removed.</li>
-                    <li>If a Ghost (G) and a Vampire (V) meet, the Vampire is removed.</li>
-                    <li>If two monsters of the same type meet, both are removed.</li>
-                </ul>
-                <li>The game continues until a player loses all 10 of their monsters.</li>
-                <li>The last player remaining wins the game!</li>
-            </ul>
-        </div>
-    </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

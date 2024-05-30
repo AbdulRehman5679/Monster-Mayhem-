@@ -112,8 +112,8 @@ button:hover {
     font-size: 18px;
     margin-top: 10px;
     display: flex;
-    justify-content: space-around;
-    width: 100%;
+    flex-direction: column;
+    align-items: center;
     color: #ffffff;
     font-weight: bold;
 }
@@ -192,10 +192,8 @@ button:hover {
 
 /* Styles for player stats and current player text */
 #logged-in-player,
-#player1-stats,
-#player2-stats,
-#player3-stats,
-#player4-stats,
+#game-stats,
+#player-stats,
 #current-player {
     background-color: #ffffff;
     border-radius: 10px;
@@ -214,6 +212,7 @@ button:hover {
 }
 
 #logged-in-player span,
+#game-stats,
 #player1-stats,
 #player2-stats,
 #player3-stats,
@@ -269,10 +268,8 @@ button:hover {
     }
 
     #logged-in-player,
-    #player1-stats,
-    #player2-stats,
-    #player3-stats,
-    #player4-stats,
+    #game-stats,
+    #player-stats,
     #current-player {
         font-size: 16px;
         padding: 8px;
@@ -298,5 +295,4 @@ input[type="text" i] {
 .highlight {
     background-color: rgba(26, 29, 21, 0.664);
     transition: background-color 0.3s;
-    color: red;
 }

@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 let users = [];
 let games = {};
 let currentGameId = 1;
+let playerStats = {};
 
 const initialMonsters = ["V", "W", "G", "V", "W", "G"]; // 2 Vampires, 2 Werewolves, 2 Ghosts
 
@@ -18,7 +19,11 @@ io.on('connection', (socket) => {
     console.log('New client connected');
 
     socket.on('login', (username) => {
+        console.log(`User ${username} logged in with socket id ${socket.id}`);
         users.push({ id: socket.id, username });
+        if (!playerStats[username]) {
+            playerStats[username] = { wins: 0, losses: 0 };
+        }
         let assignedGame = null;
 
         // Check if there is an available game with fewer than 4 players
@@ -35,7 +40,7 @@ io.on('connection', (socket) => {
         if (!assignedGame) {
             assignedGame = `game-${currentGameId++}`;
             games[assignedGame] = {
-                grid: Array(100).fill({ monster: "", player: null }),
+                grid: Array(100).fill(null).map(() => ({ monster: "", player: null })),
                 players: [username],
                 currentPlayer: 0,
                 playerMonsters: [6, 6, 6, 6], // Each player starts with 6 monsters
@@ -70,6 +75,7 @@ io.on('connection', (socket) => {
     };
 
     socket.on('moveMonster', ({ gameId, username, fromIndex, toIndex }) => {
+        console.log(`Move monster request from ${username} in game ${gameId} from ${fromIndex} to ${toIndex}`);
         const game = games[gameId];
         const playerIndex = game.players.indexOf(username);
         if (game && game.players.includes(username) && game.gameStatus === 'started') {
@@ -78,13 +84,16 @@ io.on('connection', (socket) => {
             if (fromMonster.player === playerIndex && (toMonster.monster === "" || resolveConflict(game, fromIndex, toIndex))) {
                 game.grid[toIndex] = { ...fromMonster };
                 game.grid[fromIndex] = { monster: "", player: null };
-                game.currentPlayer = (game.currentPlayer + 1) % game.players.length;
+                game.currentPlayer = getNextPlayer(game);
                 io.to(gameId).emit('updateGame', game);
+                console.log(`Monster moved from ${fromIndex} to ${toIndex}`);
             } else {
                 socket.emit('error', 'Invalid move');
+                console.log(`Invalid move from ${fromIndex} to ${toIndex}`);
             }
         } else {
             socket.emit('error', 'Invalid game or player');
+            console.log(`Invalid game or player: ${username}`);
         }
     });
 
@@ -94,10 +103,10 @@ io.on('connection', (socket) => {
 
         // Calculate starting positions for each player
         const positions = [
-            [...Array(gridSize).keys()].map(i => i), // Top row
-            [...Array(gridSize).keys()].map(i => (i + 1) * gridSize - 1), // Right column
-            [...Array(gridSize).keys()].map(i => gridSize * (gridSize - 1) + i), // Bottom row
-            [...Array(gridSize).keys()].map(i => i * gridSize) // Left column
+            Array.from({ length: monstersPerPlayer }, (_, i) => i + 2), // Top row center
+            Array.from({ length: monstersPerPlayer }, (_, i) => (i + 2) * gridSize + (gridSize - 1)), // Right column center
+            Array.from({ length: monstersPerPlayer }, (_, i) => gridSize * (gridSize - 1) + i + 2), // Bottom row center
+            Array.from({ length: monstersPerPlayer }, (_, i) => i * gridSize + 2) // Left column center
         ];
 
         for (let i = 0; i < monstersPerPlayer; i++) {
@@ -114,35 +123,46 @@ io.on('connection', (socket) => {
             (monster1 === "W" && monster2 === "G") ||
             (monster1 === "G" && monster2 === "V")) {
             game.playerMonsters[player2]--;
-            checkGameOver(game, game.players[player1], game.players[player2]);
+            checkGameOver(game, player2);
             return true;
         } else if (monster1 === monster2) {
             game.playerMonsters[player1]--;
             game.playerMonsters[player2]--;
             game.grid[toIndex] = { monster: "", player: null };
-            checkGameOver(game, game.players[player1], game.players[player2]);
+            checkGameOver(game, player1);
+            checkGameOver(game, player2);
             return true;
         }
         return false;
     };
 
-    const checkGameOver = (game, player1, player2) => {
-        if (game.playerMonsters.every(m => m <= 0)) {
-            io.to(game.players[0]).emit('gameOver', `It's a draw!`);
-            game.players.forEach(player => {
-                io.to(player).emit('gameOver', `It's a draw!`);
-            });
-        } else {
-            game.players.forEach((player, index) => {
-                if (game.playerMonsters[index] <= 0) {
-                    const otherPlayers = game.players.filter(p => p !== player);
-                    io.to(player).emit('gameOver', `${otherPlayers.join(", ")} win!`);
-                    otherPlayers.forEach(otherPlayer => {
-                        io.to(otherPlayer).emit('gameOver', `${otherPlayers.join(", ")} win!`);
-                    });
-                }
-            });
+    const checkGameOver = (game, playerIndex) => {
+        if (game.playerMonsters[playerIndex] <= 0) {
+            const remainingPlayers = game.players.filter((_, index) => game.playerMonsters[index] > 0);
+            if (remainingPlayers.length === 1) {
+                const winner = remainingPlayers[0];
+                io.to(winner).emit('gameOver', `${winner} wins!`);
+                game.players.forEach(player => {
+                    io.to(player).emit('gameOver', `${winner} wins!`);
+                    if (player === winner) {
+                        playerStats[player].wins++;
+                    } else {
+                        playerStats[player].losses++;
+                    }
+                });
+                updatePlayerStats();
+            }
         }
+    };
+
+    const getNextPlayer = (game) => {
+        const activePlayers = game.players.map((player, index) => ({ player, index, count: game.grid.filter(cell => cell.player === index).length }));
+        activePlayers.sort((a, b) => a.count - b.count || Math.random() - 0.5); // Sort by count, randomize ties
+        return activePlayers[0].index;
+    };
+
+    const updatePlayerStats = () => {
+        io.emit('updatePlayerStats', playerStats);
     };
 
     socket.on('disconnect', () => {
