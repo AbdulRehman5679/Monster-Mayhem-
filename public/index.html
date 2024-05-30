@@ -9,11 +9,10 @@
 <body>
     <div id="login-screen" class="screen">
         <h1>Monster Mayhem</h1>
-        <h3>making changes</h3>
         <input type="text" id="username" placeholder="Enter your username">
         <button id="login-button">Login</button>
     </div>
-    <div id="game-screen" class="screen">
+    <div id="game-screen" class="screen" style="display:none;">
         <h1>Monster Mayhem</h1>
         <div id="controls">
             <button id="show-rules" class="left">Show Rules</button>
@@ -51,6 +50,6 @@
         </div>
     </div>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>

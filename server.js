@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
                 break;
             }
         }
-
+            
         // If no available game, create a new one
         if (!assignedGame) {
             assignedGame = `game-${currentGameId++}`;
