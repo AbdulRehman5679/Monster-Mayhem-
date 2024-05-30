@@ -35,7 +35,7 @@ io.on('connection', (socket) => {
                 break;
             }
         }
-            
+
         // If no available game, create a new one
         if (!assignedGame) {
             assignedGame = `game-${currentGameId++}`;
@@ -76,7 +76,11 @@ io.on('connection', (socket) => {
 
     socket.on('moveMonster', ({ gameId, username, fromIndex, toIndex }) => {
         console.log(`Move monster request from ${username} in game ${gameId} from ${fromIndex} to ${toIndex}`);
-        const game = games[gameId];
+        const game = games[gameId]; // Ensure gameId is not null and game is defined
+        if (!game) {
+            socket.emit('error', 'Invalid game ID');
+            return;
+        }
         const playerIndex = game.players.indexOf(username);
         if (game && game.players.includes(username) && game.gameStatus === 'started') {
             const fromMonster = game.grid[fromIndex];

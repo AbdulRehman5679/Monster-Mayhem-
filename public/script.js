@@ -1,11 +1,11 @@
 console.log('Script loaded');
 
-const socket = io();
+const socket = io('http://localhost:3000');
 
 let grid = [];
 let currentPlayer = 0;
 let playerIndex = null;
-let gameId = null;
+let gameId = 1;
 let username = null;
 let selectedMonster = null;
 const players = ["Player 1", "Player 2", "Player 3", "Player 4"];
@@ -50,13 +50,9 @@ function handleCellClick(index) {
 
 function moveMonster(index) {
     console.log(`Attempting to move monster from ${selectedMonster} to ${index}`);
-    if (grid[index].monster === "" && isMoveValid(selectedMonster, index)) {
-        socket.emit('moveMonster', { gameId, username, fromIndex: selectedMonster, toIndex: index });
-        selectedMonster = null;
-        clearHighlight();
-    } else {
-        alert("Invalid move!");
-    }
+    socket.emit('moveMonster', { gameId, username, fromIndex: selectedMonster, toIndex: index });
+    selectedMonster = null;
+    clearHighlight();
 }
 
 function selectMonster(index) {
@@ -70,16 +66,6 @@ function selectMonster(index) {
     } else {
         console.log(`Invalid selection at index: ${index}`);
     }
-}
-
-function isMoveValid(fromIndex, toIndex) {
-    console.log(`Validating move from ${fromIndex} to ${toIndex}`);
-    const fromRow = Math.floor(fromIndex / 10);
-    const fromCol = fromIndex % 10;
-    const toRow = Math.floor(toIndex / 10);
-    const toCol = toIndex % 10;
-
-    return (fromRow === toRow || fromCol === toCol || (Math.abs(fromRow - toRow) <= 2 && Math.abs(fromCol - toCol) <= 2));
 }
 
 function calculatePossibleMoves(index) {
