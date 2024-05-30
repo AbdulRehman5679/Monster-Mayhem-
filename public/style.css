@@ -298,4 +298,5 @@ input[type="text" i] {
 .highlight {
     background-color: rgba(26, 29, 21, 0.664);
     transition: background-color 0.3s;
+    color: red;
 }
