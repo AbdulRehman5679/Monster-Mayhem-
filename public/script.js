@@ -1,11 +1,10 @@
-console.log('Script loaded');
 
 const socket = io('http://localhost:3000');
 
 let grid = [];
 let currentPlayer = 0;
 let playerIndex = null;
-let gameId = 1;
+let gameId = 'default-game'; // Default game ID
 let username = null;
 let selectedMonster = null;
 const players = ["Player 1", "Player 2", "Player 3", "Player 4"];
@@ -15,9 +14,15 @@ const monsters = ["V", "W", "G"]; // V for Vampire, W for Werewolf, G for Ghost
 
 // Utility functions
 function getElementById(id) {
-    console.log(`Fetching element with id: ${id}`);
-    return document.getElementById(id);
+    const element = document.getElementById(id);
+    if (element) {
+        console.log(`Element found with id: ${id}`);
+    } else {
+        console.log(`Element not found with id: ${id}`);
+    }
+    return element;
 }
+
 
 function createCell(index) {
     console.log(`Creating cell for index: ${index}`);
@@ -106,15 +111,24 @@ function highlightMoves(index) {
     clearHighlight();
     const possibleMoves = calculatePossibleMoves(index);
     possibleMoves.forEach(move => {
-        getElementById(`cell-${move}`).classList.add('highlight');
-        console.log(`Highlighting cell ${move}`);
+        const cellElement = getElementById(`cell-${move}`);
+        if (cellElement) {  // Ensure the cell exists
+            cellElement.classList.add('highlight');
+            console.log(`Highlighting cell ${move}`);  // Logging to confirm
+        } else {
+            console.log(`Cell with index ${move} does not exist`);  // Error logging
+        }
     });
 }
 
 function clearHighlight() {
     console.log('Clearing highlights');
     const highlightedCells = document.querySelectorAll('.highlight');
-    highlightedCells.forEach(cell => cell.classList.remove('highlight'));
+    console.log(`Found ${highlightedCells.length} cells to clear`);
+    highlightedCells.forEach(cell => {
+        cell.classList.remove('highlight');
+        console.log(`Cleared highlight from cell ${cell.id}`);
+    });
 }
 
 function updateGrid(game) {
@@ -132,7 +146,13 @@ function updateGrid(game) {
     getElementById("player4-stats").textContent = `${game.players[3]} Lives: ${game.playerMonsters[3]}`;
     getElementById("current-player").textContent = `Current Player: ${game.players[game.currentPlayer]}`;
     currentPlayer = game.currentPlayer;
+
+    // Reapply highlight if needed
+    if (selectedMonster !== null) {
+        highlightMoves(selectedMonster);
+    }
 }
+
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log('Document fully loaded');

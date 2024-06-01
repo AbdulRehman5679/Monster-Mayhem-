@@ -293,6 +293,6 @@ input[type="text" i] {
 
 /* Highlight possible moves */
 .highlight {
-    background-color: rgba(185, 70, 13, 0.664);
+    background-color: rgba(27, 139, 12, 0.664);
     transition: background-color 0.3s;
 }
