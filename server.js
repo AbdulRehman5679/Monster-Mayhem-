@@ -1,180 +1,119 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
+const express = require("express");
+const bodyParser = require("body-parser");
+require("ejs");
+const http = require("http");
+const path = require("path");
+const passport = require("passport");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
+const User = require("./schema/user");
+const flash = require("connect-flash");
+const { Server } = require("socket.io");
+require("dotenv").config();
 const PORT = process.env.PORT || 3000;
+const mongoConnect = require("./mongoConnect");
+const Game = require("./schema/game");
+mongoConnect();
 
-let users = [];
-let games = {};
-let currentGameId = 1;
-let playerStats = {};
+app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
 
-const initialMonsters = ["V", "W", "G", "V", "W", "G"]; // 2 Vampires, 2 Werewolves, 2 Ghosts
-
-io.on('connection', (socket) => {
-    console.log('New client connected');
-
-    socket.on('login', (username) => {
-        console.log(`User ${username} logged in with socket id ${socket.id}`);
-        users.push({ id: socket.id, username });
-        if (!playerStats[username]) {
-            playerStats[username] = { wins: 0, losses: 0 };
-        }
-        let assignedGame = null;
-
-        // Check if there is an available game with fewer than 4 players
-        for (const [gameId, game] of Object.entries(games)) {
-            if (game.players.length < 4) {
-                assignedGame = gameId;
-                game.players.push(username);
-                placeInitialMonsters(game, game.players.length - 1);
-                break;
-            }
-        }
-
-        // If no available game, create a new one
-        if (!assignedGame) {
-            assignedGame = `game-${currentGameId++}`;
-            games[assignedGame] = {
-                grid: Array(100).fill(null).map(() => ({ monster: "", player: null })),
-                players: [username],
-                currentPlayer: 0,
-                playerMonsters: [6, 6, 6, 6], // Each player starts with 6 monsters
-                gameStatus: 'waiting',
-            };
-            placeInitialMonsters(games[assignedGame], 0);
-        }
-
-        socket.join(assignedGame);
-        socket.emit('loginSuccess', { gameId: assignedGame, username });
-        io.to(assignedGame).emit('updatePlayerList', games[assignedGame].players);
-
-        if (games[assignedGame].players.length < 4) {
-            io.to(assignedGame).emit('waitingForPlayer', 'Waiting for other players...');
-        } else {
-            startGameCountdown(assignedGame);
-        }
-    });
-
-    const startGameCountdown = (gameId) => {
-        let countdown = 3;
-        const countdownInterval = setInterval(() => {
-            io.to(gameId).emit('countdown', countdown);
-            countdown--;
-            if (countdown < 0) {
-                clearInterval(countdownInterval);
-                games[gameId].gameStatus = 'started';
-                io.to(gameId).emit('startGame', games[gameId]);
-                io.to(gameId).emit('updateGame', games[gameId]);
-            }
-        }, 1000);
-    };
-
-    socket.on('moveMonster', ({ gameId, username, fromIndex, toIndex }) => {
-        console.log(`Move monster request from ${username} in game ${gameId} from ${fromIndex} to ${toIndex}`);
-        const game = games[gameId]; // Ensure gameId is not null and game is defined
-        if (!game) {
-            socket.emit('error', 'Invalid game ID');
-            return;
-        }
-        const playerIndex = game.players.indexOf(username);
-        if (game && game.players.includes(username) && game.gameStatus === 'started') {
-            const fromMonster = game.grid[fromIndex];
-            const toMonster = game.grid[toIndex];
-            if (fromMonster.player === playerIndex && (toMonster.monster === "" || resolveConflict(game, fromIndex, toIndex))) {
-                game.grid[toIndex] = { ...fromMonster };
-                game.grid[fromIndex] = { monster: "", player: null };
-                game.currentPlayer = getNextPlayer(game);
-                io.to(gameId).emit('updateGame', game);
-                console.log(`Monster moved from ${fromIndex} to ${toIndex}`);
-            } else {
-                socket.emit('error', 'Invalid move');
-                console.log(`Invalid move from ${fromIndex} to ${toIndex}`);
-            }
-        } else {
-            socket.emit('error', 'Invalid game or player');
-            console.log(`Invalid game or player: ${username}`);
-        }
-    });
-
-    const placeInitialMonsters = (game, playerIndex) => {
-        const gridSize = 10;
-        const monstersPerPlayer = initialMonsters.length;
-
-        // Calculate starting positions for each player
-        const positions = [
-            Array.from({ length: monstersPerPlayer }, (_, i) => i + 2), // Top row center
-            Array.from({ length: monstersPerPlayer }, (_, i) => (i + 2) * gridSize + (gridSize - 1)), // Right column center
-            Array.from({ length: monstersPerPlayer }, (_, i) => gridSize * (gridSize - 1) + i + 2), // Bottom row center
-            Array.from({ length: monstersPerPlayer }, (_, i) => i * gridSize + 2) // Left column center
-        ];
-
-        for (let i = 0; i < monstersPerPlayer; i++) {
-            const index = positions[playerIndex][i];
-            game.grid[index] = { monster: initialMonsters[i], player: playerIndex };
-        }
-    };
-
-    const resolveConflict = (game, fromIndex, toIndex) => {
-        const { monster: monster1, player: player1 } = game.grid[fromIndex];
-        const { monster: monster2, player: player2 } = game.grid[toIndex];
-
-        if ((monster1 === "V" && monster2 === "W") ||
-            (monster1 === "W" && monster2 === "G") ||
-            (monster1 === "G" && monster2 === "V")) {
-            game.playerMonsters[player2]--;
-            checkGameOver(game, player2);
-            return true;
-        } else if (monster1 === monster2) {
-            game.playerMonsters[player1]--;
-            game.playerMonsters[player2]--;
-            game.grid[toIndex] = { monster: "", player: null };
-            checkGameOver(game, player1);
-            checkGameOver(game, player2);
-            return true;
-        }
-        return false;
-    };
-
-    const checkGameOver = (game, playerIndex) => {
-        if (game.playerMonsters[playerIndex] <= 0) {
-            const remainingPlayers = game.players.filter((_, index) => game.playerMonsters[index] > 0);
-            if (remainingPlayers.length === 1) {
-                const winner = remainingPlayers[0];
-                io.to(winner).emit('gameOver', `${winner} wins!`);
-                game.players.forEach(player => {
-                    io.to(player).emit('gameOver', `${winner} wins!`);
-                    if (player === winner) {
-                        playerStats[player].wins++;
-                    } else {
-                        playerStats[player].losses++;
-                    }
-                });
-                updatePlayerStats();
-            }
-        }
-    };
-
-    const getNextPlayer = (game) => {
-        const activePlayers = game.players.map((player, index) => ({ player, index, count: game.grid.filter(cell => cell.player === index).length }));
-        activePlayers.sort((a, b) => a.count - b.count || Math.random() - 0.5); // Sort by count, randomize ties
-        return activePlayers[0].index;
-    };
-
-    const updatePlayerStats = () => {
-        io.emit('updatePlayerStats', playerStats);
-    };
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-        users = users.filter(user => user.id !== socket.id);
-    });
+const store = new MongoDBStore({
+  mongoUrl: process.env.MONGO_URI,
+  collection: "sessions",
 });
 
-app.use(express.static('public'));
+store.on("error", function (error) {
+  console.log("Session store error:", error);
+});
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+  })
+);
+
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+const LocalStrategy = require("passport-local").Strategy;
+passport.use(new LocalStrategy(User.authenticate()));
+
+app.use("/", require("./routes"));
+
+const server = http.createServer(app);
+server.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}. http://localhost:${PORT}/`);
+});
+
+const io = new Server(server);
+
+io.on("connection", (socket) => {
+  socket.on("joinGame", ({ gameId }) => {
+    socket.join(gameId);
+  });
+  socket.on("game", ({ gameId, game }) => {
+    io.to(gameId).emit("game", game);
+  });
+  socket.on("result", ({ gameId, players, winner }) => {
+    updatePlayers(players, winner);
+    updateGame(gameId);
+  });
+
+  socket.on("monsterEliminated", async ({ gameId, player }) => {
+    const game = await Game.findById(gameId);
+    if (player === game.players[0]._id.toString()) {
+      game.eliminatedMonsters.player1 += 1;
+      if (game.eliminatedMonsters.player1 >= 10) {
+        game.status = "finished";
+        await game.save();
+        io.to(gameId).emit("result", { gameId, players: game.players, winner: game.players[1] });
+        return;
+      }
+    } else {
+      game.eliminatedMonsters.player2 += 1;
+      if (game.eliminatedMonsters.player2 >= 10) {
+        game.status = "finished";
+        await game.save();
+        io.to(gameId).emit("result", { gameId, players: game.players, winner: game.players[0] });
+        return;
+      }
+    }
+    await game.save();
+    io.to(gameId).emit("game", game);
+  });
+});
+
+async function updatePlayers(players, winner) {
+  const player0 = await User.findById(players[0]);
+  const player1 = await User.findById(players[1]);
+  if (winner) {
+    if (winner === players[0]) {
+      player0.gamesWon++;
+      player1.gamesLost++;
+    } else {
+      player1.gamesWon++;
+      player0.gamesLost++;
+    }
+  } else {
+    player0.gamesDrawn++;
+    player1.gamesDrawn++;
+  }
+  await player0.save();
+  await player1.save();
+}
+
+async function updateGame(gameId) {
+  const game = await Game.findById(gameId);
+  game.status = "finished";
+  await game.save();
+}
