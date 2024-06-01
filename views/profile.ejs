@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Monster Mayhem</title>
+  </head>
+  <body>
+    <header>
+      <a href="/login">Login</a>
+      <a href="/register">Register</a>
+      <a href="/logout">Logout</a>
+      <a href="/profile">Profile</a>
+      <a href="/game">Play game</a>
+    </header>
+    <div class="container">
+      <p>Profile</p>
+      <p>Name: <%= user.name %></p>
+      <p>Username: <%= user.username %></p>
+      <p>
+        Games completed: <%= user.gamesWon + user.gamesLost + user.gamesDrawn %>
+      </p>
+      <p>Games won: <%= user.gamesWon %></p>
+      <p>Games lost: <%= user.gamesLost %></p>
+      <p>Games drawn: <%= user.gamesDrawn %></p>
+    </div>
+  </body>
+</html>
