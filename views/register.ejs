@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Monster Mayhem</title>
+  </head>
+  <body>
+    <h1>Register</h1>
+    <% if (errorMessage) { %>
+    <p class="error"><%= errorMessage %></p>
+    <% } %>
+    <form method="post" action="/register">
+      <label for="name">Name:</label>
+      <input type="text" name="name" />
+      <br />
+      <label for="username">Username:</label>
+      <input type="text" name="username" />
+      <br />
+      <label for="password">Password:</label>
+      <input type="password" name="password" />
+      <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="/login">Login</a></p>
+  </body>
+</html>
